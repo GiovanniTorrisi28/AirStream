@@ -47,16 +47,19 @@ Il progetto è realizzato tramite un'architettura a micro-servizi basata su Dock
 
 ```plaintext
 AirStream/
-│── docker-compose.yml        # File per l'avvio dei container
+│── docker-compose.yml        # Avvio dei container
 │
 ├── logstash/
 │   └── pipeline/
 │       └── logstash.conf     # Configurazione per l’ingestion dei dati
 │
 ├── spark/
-│   ├── Dockerfile            # Dockerfile per la costruzione dell'immagine immagine Spark con librerie necessarie
+│   ├── Dockerfile            # File per la costruzione dell' immagine Spark con le librerie necessarie
 │   ├── models/               # Modello Random Forest addestrato
-│   ├── dataset/              # File CSV per dataset di training e validation
-│   └── src/                  # Codici Python (training, validation, script principale)
+│   ├── dataset/              # File CSV per training e validation
+│   └── src/                  # Codici Python (training, validazione, script principale)
 │
+├── elasticsearch/
+│   ├── esdata/               # Dati persistenti salvati su Elasticsearch
+│   
 └── README.md                 # Documentazione del progetto
