@@ -1,7 +1,7 @@
 # AirStream 
 
 ## Descrizione
-Questo progetto è un softare per l'analisi della qualità dell'aria con riferimento alla città di Catania (Sicilia, Italia).
+Questo progetto è un software per l'analisi della qualità dell'aria con riferimento alla città di Catania (Sicilia, Italia).
 
 I dati dell'inquinamento vengono acquisiti in streaming da una sorgente esterna vengono elaborati in tempo reale con lo scopo di: 
 - Monitorare l'andamento della qualità dell'aria e le principali condizioni atmosferiche
