@@ -1,0 +1,1 @@
+{"class":"org.apache.spark.ml.feature.StringIndexerModel","timestamp":1757866667814,"sparkVersion":"3.5.2","uid":"StringIndexer_757865d92ef8","paramMap":{"inputCol":"next_aqi","outputCol":"label"},"defaultParamMap":{"stringOrderType":"frequencyDesc","outputCol":"StringIndexer_757865d92ef8__output","handleInvalid":"error"}}
