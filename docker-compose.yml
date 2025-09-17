@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.13.4
+    container_name: logstash
+    volumes:
+      - ./logstash/pipeline/:/usr/share/logstash/pipeline/
+    environment:
+      LAT: "37.5022"
+      LON: "15.0873"
+      CITY: "Catania"
+      API_KEY: "056928b3fb7012b32cfa961ddd30a609"
+    ports: ["5044:5044"]
+    depends_on:
+      - kafka
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_KRAFT_MODE: "true"  
+      KAFKA_PROCESS_ROLES: controller,broker  
+      KAFKA_NODE_ID: 1  
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"  
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092 
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"  
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1  
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0 
+      CLUSTER_ID: '4L6g3nShT-eMCtK--X86sw' 
+    
+    healthcheck:
+      test: ["CMD", "nc", "-z", "kafka", "9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  
+  spark:
+    build:
+      context: ./spark
+      dockerfile: Dockerfile
+    container_name: spark
+    volumes:
+      - ./spark/workspace:/app
+    working_dir: /app
+   # command: sleep infinity
+    command: >
+            spark-submit
+            --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.2
+            src/app.py
+    depends_on:
+       kafka:
+          condition: service_healthy
+  
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.2
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9200:9200"
+    volumes:
+      - ./elasticsearch/esdata:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.19.2
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch 
