@@ -5,16 +5,16 @@ from pyspark.ml import PipelineModel
 import json
 import requests
 
-# 🔹 Funzione per inviare i dati a Elasticsearch
+# Funzione per inviare i dati a Elasticsearch
 def send_to_es(partition):
     for row in partition:
         try:
-            # Conversione in dizionario (gestendo eventuali timestamp)
+            # conversione in dizionario ed eventuale gestione dei timestamp
             doc = {col: (val.isoformat() if hasattr(val, "isoformat") else val) 
                    for col, val in row.asDict().items()}
 
             resp = requests.post(
-                "http://elasticsearch:9200/airquality/_doc",  # 🔹 indice a tua scelta
+                "http://elasticsearch:9200/airquality/_doc", 
                 headers={"Content-Type": "application/json"},
                 data=json.dumps(doc)
             )
@@ -23,14 +23,14 @@ def send_to_es(partition):
             print("Errore connessione a Elasticsearch:", e)
 
 
-# 1️⃣ SparkSession
+# Creazione della sessione spark
 spark = SparkSession.builder \
     .appName("KafkaMultipleTopics") \
     .getOrCreate()
 
 spark.sparkContext.setLogLevel("ERROR")
 
-# 2️⃣ Schemi JSON
+# Definizione degli schemi json
 weather_schema = StructType([
     StructField("temperature", FloatType(), True),
     StructField("humidity", IntegerType(), True),
@@ -56,7 +56,7 @@ air_schema = StructType([
     StructField("@timestamp", TimestampType(), True)
 ])
 
-# 3️⃣ Leggi da Kafka
+# Letture degli stream da kafka
 weather_df = spark.readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", "kafka:9092") \
@@ -71,7 +71,7 @@ air_df = spark.readStream \
     .option("startingOffsets", "earliest") \
     .load()
 
-# 4️⃣ Decodifica JSON
+# Decodifica dei dati letti da kafka
 weather_df_parsed = weather_df.select(
     from_json(col("value").cast("string"), weather_schema).alias("data")
 ).select("data.*")
@@ -80,11 +80,11 @@ air_df_parsed = air_df.select(
     from_json(col("value").cast("string"), air_schema).alias("data")
 ).select("data.*")
 
-# elimina i duplicati
+# Filtraggio dei duplicati
 weather = weather_df_parsed.dropDuplicates(["city", "measurement_time"])
 air = air_df_parsed.dropDuplicates(["city", "measurement_time"])
 
-# Alias
+# Join tra i due dataframe
 joined = weather.join(
     air,
     (weather["city"] == air["city"]) &
@@ -92,7 +92,7 @@ joined = weather.join(
                                    air["@timestamp"] + expr("INTERVAL 2 SECONDS")))
 )
 
-# Scegli cosa tenere per evitare ambiguità
+# Selezione dei campi da conservare nel dataframe finale
 joined_df = joined.select(
     weather["measurement_time"].alias("weather_measurement_time"),
     air["measurement_time"].alias("air_measurement_time"),
@@ -106,28 +106,20 @@ joined_df = joined.select(
     air["so2"], air["pm2_5"], air["pm10"], air["nh3"]
 )
 
-# --- Carico il modello salvato 
+# Load del modello salvato
 model = PipelineModel.load("models/random_forest_v2")
 
-# --- Applico il modello
+# Applicazione del modello
 predictions = model.transform(joined_df)
 
-# --- Incremento la prediction di 1
+# Incremento della prediction di 1
 results = predictions.withColumn("prediction", col("prediction") + 1)
 
-# --- Risultato finale: tutte le colonne + prediction
+# Risultato finale
 results = results.select("weather_measurement_time", "air_measurement_time","aqi","co","no","no2","o3","so2","pm2_5","pm10","nh3","city", "location", "temperature", "wind_speed", "humidity","timestamp","prediction")
 
 
-# Stampa i dati su console
-"""
-query = results.writeStream \
-    .outputMode("append") \
-    .format("console") \
-    .option("truncate", "false") \
-    .start()
-"""
-# Scrivi su Elasticsearch
+# Output su Elasticsearch
 query_es = (results.writeStream
     .foreachBatch(lambda batch_df, _: batch_df.foreachPartition(send_to_es))
     #.option("checkpointLocation", "/opt/spark-checkpoints/airquality")
@@ -136,7 +128,7 @@ query_es = (results.writeStream
     .start()
 )
 
-# Scrittura su console 
+# Output su console 
 query_console = (
     results.writeStream
     .format("console")
