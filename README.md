@@ -54,12 +54,20 @@ AirStream/
 │       └── logstash.conf     # Configurazione per l’ingestion dei dati
 │
 ├── spark/
-│   ├── Dockerfile            # File per la costruzione dell' immagine Spark con le librerie necessarie
+│   ├── Dockerfile            # File per la costruzione dell'immagine Spark con le librerie necessarie
 │   ├── models/               # Modello Random Forest addestrato
 │   ├── dataset/              # File CSV per training e validation
 │   └── src/                  # Codici Python (training, validazione, script principale)
 │
 ├── elasticsearch/
 │   ├── esdata/               # Dati persistenti salvati su Elasticsearch
-│   
+│
+├── kibana/
+│   └── export.ndjson         # Configurazione della dashboard Kibana
+│
+├── images/                   # Immagini utilizzate nel notebook di presentazione
+│
+├── presentazione.ipynb       # Notebook di presentazione
+│
 └── README.md                 # Documentazione del progetto
+```
