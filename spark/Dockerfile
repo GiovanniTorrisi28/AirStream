@@ -1,6 +1,6 @@
 FROM bitnami/spark:3.5.2
 
-# Installa numpy
+# Installazione dei pacchetti aggiuntivi
 RUN pip install --no-cache-dir numpy requests
 
 
